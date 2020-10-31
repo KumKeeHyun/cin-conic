@@ -18,7 +18,7 @@ int ServeHTTP(Router* r, Context* ctx);
 int matchUrlPath(char *pattern, char *url, Map *map);
 
 int StartServer(Router* r, char *addr);
-void handleRequest(int sd);
+void handleRequest(Router *r, int sd);
 int readLine(int fd, char *buf);
 int parseHeader(Map *map, int fd);
 int parseHeaderMethod(Map *map, char *buf);

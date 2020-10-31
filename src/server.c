@@ -67,8 +67,7 @@ int StartServer(Router* r, char *addr) {
 
         if (fork() == 0) {
 			close(listenSocket);
-            printf("handle request\n");
-			handleRequest(handleSocket);
+			handleRequest(r, handleSocket);
             return 0;
 		} else {
 			close(handleSocket);
@@ -77,11 +76,9 @@ int StartServer(Router* r, char *addr) {
 
 }
 
-void handleRequest(int sd) {
-    char *errorMsg = "HTTP/1.1 404 Not Found\r\nContent-Type: text/html\r\nContent-Lenght: 0\r\n\r\n";
-
+void handleRequest(Router *r, int sd) {
     while (1) {
-        Context ctx;
+        Context ctx = {0, };
         Map *header = NewMap(10);
 
         if (parseHeader(header, sd) < 0) {
@@ -93,15 +90,12 @@ void handleRequest(int sd) {
             break;
         }
 
-        PrintMap(header, printString); 
         MapToRequest(&(ctx.req), header);
-        FreeMap(header, freeString);
         ctx.sockfd = sd;
         
+        ServeHTTP(r, &ctx);
 
-        // call handler
-        write(sd, errorMsg, strlen(errorMsg));
-
+        FreeMap(header, freeString);
         FreeRequest(&(ctx.req));
     }
     printf("disconnect\n");
