@@ -13,7 +13,7 @@ void helloWorld(Context *ctx) {
 }
 
 void png(Context *ctx) {
-    PNG(ctx, StatusOK, "4week-2.PNG");
+    SendFile(ctx, StatusOK, "4week-2.PNG");
 }
 
 int main(int argc, char *argv[]) {

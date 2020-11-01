@@ -10,11 +10,10 @@ typedef struct _Context{
     int sockfd;
 }Context;
 
-void HTML(Context *ctx, int code, char *file);
-void JPG(Context *ctx, int code, char *file);
-void PNG(Context *ctx, int code, char *file);
-void sendFile(Context *ctx, char *header, int fd);
-void sendMsg(Context *ctx, int code, char *msg);
+void SendFile(Context *ctx, int code, const char *file);
+int checkSuffix(const char *file);
+void sendFile(Context *ctx, const char *header, int fd);
+void SendMsg(Context *ctx, int code, const char *msg);
 
 typedef void(*HandlerFunc)(Context *);
 
