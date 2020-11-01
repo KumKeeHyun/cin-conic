@@ -10,11 +10,12 @@ static const char *respHeaderFmt = "HTTP/1.1 %d %s\r\nContent-Type: %s\r\nConten
 static const char *suffix[4] = {"text/html", "image/jpg", "image/png", "text/plain"};
 static enum {HTML, JPG, PNG, PLAIN,};
 
-
 const char *GetStatusMsg(int code) {
     switch (code) {
         case StatusOK: return "OK";
+        case StatusBadRequest: return "Bad Request";
         case StatusNotFound: return "Not Found";
+        case StatusInternalServerError: return "Internal Server Error";
     }
     return "";
 }
@@ -24,16 +25,16 @@ void SendFile(Context *ctx, int code, const char *file) {
     struct stat fileStat;
     char header[128];
 
+    ctx->status = code;
     if ((fd = open(file, O_RDONLY)) == -1) {
-        SendMsg(ctx, 404, "invalid file");
+        SendMsg(ctx, StatusInternalServerError, "cannot open file");
         return;
     }
     if (fstat(fd, &fileStat) == -1) {
-        SendMsg(ctx, 404, "cannot read file info");
+        SendMsg(ctx, StatusInternalServerError, "cannot read file info");
         return;
     }
     suffixID = checkSuffix(file);
-    printf("serve %s\n", suffix[suffixID]);
     sprintf(header, respHeaderFmt, code, GetStatusMsg(code), suffix[suffixID], fileStat.st_size);
     
     sendFile(ctx, header, fd);
@@ -72,6 +73,8 @@ void sendFile(Context *ctx, const char *header, int fd) {
 
 void SendMsg(Context *ctx, int code, const char *msg) {
     char header[128];
+
+    ctx->status = code;
     sprintf(header, respHeaderFmt, code, GetStatusMsg(code), "text/plain", strlen(msg));
     write(ctx->sockfd, header, strlen(header));
     write(ctx->sockfd, msg, strlen(msg));

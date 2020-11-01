@@ -10,13 +10,16 @@ typedef struct _Router{
     Map *table;
 } Router;
 
-
+// router.c
 Router* NewRouter();
 int GET(Router* r, char *pattern, HandlerFunc h);
 int POST(Router* r, char *pattern, HandlerFunc h);
 int ServeHTTP(Router* r, Context* ctx);
 int matchUrlPath(char *pattern, char *url, Map *map);
+int Static(Router* r, const char *dir);
+void staticHandler(Context *ctx);
 
+// server.c
 int StartServer(Router* r, char *addr);
 void handleRequest(Router *r, int sd);
 int readLine(int fd, char *buf);

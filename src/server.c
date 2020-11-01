@@ -94,6 +94,7 @@ void handleRequest(Router *r, int sd) {
         ctx.sockfd = sd;
         
         ServeHTTP(r, &ctx);
+        printf("%-10s%-6d%s\n", ctx.req.method, ctx.status, ctx.req.url);
 
         FreeMap(header, freeString);
         FreeRequest(&(ctx.req));

@@ -42,9 +42,6 @@ void printTemp(void *src) {
 int ServeHTTP(Router* r, Context* ctx) {
     Map *table;
     node *iter;
-    char *errorMsg = "HTTP/1.1 404 Not Found\r\nContent-Type: text/html\r\nContent-Lenght: 10\r\n\r\n404 Error";
-
-    printf("log: %s\t%s\t%s\n", ctx->req.method, ctx->req.url, ctx->req.version);
 
     if (GetData(r->table, ctx->req.method, (void**)&table, cpyMap) == -1) {
         goto error;
@@ -61,8 +58,8 @@ int ServeHTTP(Router* r, Context* ctx) {
         }
     }
 error:
-    printf("not found\n");
-    write(ctx->sockfd, errorMsg, strlen(errorMsg));
+    ctx->status = StatusNotFound;
+    SendMsg(ctx, StatusNotFound, "404 error");
     return -1;
 }
 
@@ -102,11 +99,21 @@ int matchUrlPath(char *pattern, char *url, Map *map) {
         temp = strtok(NULL, "/");
     }
     
-    for (num = 0; num <= patternSliceLen; num++) {
-        if (strcmp(patternSlice[num], urlSlice[num]) == 0){
+    for (int i = 0; i < num; i++) {
+        if (patternSlice[i] == NULL || urlSlice[i] == NULL) {
+            if (patternSlice[i] == urlSlice[i]) {
+                continue;
+            } else {
+                free(_pattern);
+                free(patternSlice);
+                free(_url);
+                free(urlSlice);
+                return -1;
+            }
+        } else if (strcmp(patternSlice[i], urlSlice[i]) == 0){
             continue;
-        } else if (strlen(patternSlice[num]) > 0 && patternSlice[num][0] == ':') {
-            SetData(map, patternSlice[num]+1, urlSlice[num], cpyString, freeString);
+        } else if (strlen(patternSlice[i]) > 0 && patternSlice[i][0] == ':') {
+            SetData(map, patternSlice[i]+1, urlSlice[i], cpyString, freeString);
         } else {
             free(_pattern);
             free(patternSlice);
@@ -121,4 +128,32 @@ int matchUrlPath(char *pattern, char *url, Map *map) {
     free(_url);
     free(urlSlice);
     return 0;
+}
+
+// 디렉토리 문자열 앞, 뒤로 "/"가 없어야함
+int Static(Router* r, const char *dir) {
+    char *pattern;
+    const char *patternFmt = "/%s/:filename";
+    
+    pattern = (char *)malloc(strlen(dir) + 12); // "/$(dir)/:filename"
+    sprintf(pattern, patternFmt, dir);
+    printf("static :%s\n", pattern);
+    GET(r, pattern, staticHandler);
+    free(pattern);
+    return 0;
+}
+
+void staticHandler(Context *ctx) {
+    char *filename;
+    if (GetData(ctx->req.map, "filename", (void**)&filename, cpyString) >= 0) {
+        if (strcmp(filename, ".") == 0 || strcmp(filename, "..") == 0) {
+            SendMsg(ctx, StatusBadRequest, "invalid filename");
+        } else {
+            SendFile(ctx, StatusOK, ctx->req.url+1);
+        }
+        free(filename);
+    } else {
+        SendMsg(ctx, StatusInternalServerError, "param error");
+    }
+
 }

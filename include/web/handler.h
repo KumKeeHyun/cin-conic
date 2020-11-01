@@ -3,11 +3,11 @@
 
 #include "web/http.h"
 #include "web/request.h"
-#include "web/response.h"
 
 typedef struct _Context{
     Request req;
     int sockfd;
+    int status;
 }Context;
 
 void SendFile(Context *ctx, int code, const char *file);
