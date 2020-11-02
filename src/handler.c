@@ -34,10 +34,13 @@ void SendFile(Context *ctx, int code, const char *file) {
         SendMsg(ctx, StatusInternalServerError, "cannot read file info");
         return;
     }
-    suffixID = checkSuffix(file);
-    sprintf(header, respHeaderFmt, code, GetStatusMsg(code), suffix[suffixID], fileStat.st_size);
-    
-    sendFile(ctx, header, fd);
+    if (S_ISDIR(fileStat.st_mode)) {
+        SendMsg(ctx, StatusBadRequest, "cannot serve directory");
+    } else {
+        suffixID = checkSuffix(file);
+        sprintf(header, respHeaderFmt, code, GetStatusMsg(code), suffix[suffixID], fileStat.st_size);
+        sendFile(ctx, header, fd);
+    }
     close(fd);
 }
 

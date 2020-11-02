@@ -47,6 +47,8 @@ int StartServer(Router* r, char *portNum) {
 		exit(-1);
 	}
 
+    printf("--------start cin-conic--------\n");
+
     sockAddrLen = sizeof(struct sockaddr_in);
     while (1) {
         handleSocket = accept(listenSocket, (struct sockaddr *)&cliSockAddr, &sockAddrLen);
