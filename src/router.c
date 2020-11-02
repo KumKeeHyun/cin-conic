@@ -21,6 +21,7 @@ int GET(Router* r, char *pattern, HandlerFunc h) {
     }
     GetData(r->table, "GET", (void **)&getTable, cpyMap);
     SetData(getTable, pattern, h, cpyHandler, freeHandler);
+    printf("%-13s %s\n", "GET", pattern);
     return 0;
 }
 
@@ -32,6 +33,7 @@ int POST(Router* r, char *pattern, HandlerFunc h) {
     }
     GetData(r->table, "POST", (void **)&postTable, cpyMap);
     SetData(postTable, pattern, h, cpyHandler, freeHandler);
+    printf("%-13s %s\n", "POST", pattern);
     return 0;
 }
 
@@ -137,7 +139,6 @@ int Static(Router* r, const char *dir) {
     
     pattern = (char *)malloc(strlen(dir) + 12); // "/$(dir)/:filename"
     sprintf(pattern, patternFmt, dir);
-    printf("static :%s\n", pattern);
     GET(r, pattern, staticHandler);
     free(pattern);
     return 0;
