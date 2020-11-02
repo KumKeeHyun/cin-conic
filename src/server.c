@@ -15,22 +15,18 @@
 #include "web/router.h"
 #include "map.h"
 
-void wait_handler() {
+void waitHandler(int signo) {
 	int status;
 	pid_t pid;
 	pid = wait(&status);
-	printf("wait : %d\n", pid);
 }
 
-int StartServer(Router* r, char *addr) {
+int StartServer(Router* r, char *portNum) {
     int listenSocket, handleSocket;
-    int sockAddrLen;
+    socklen_t sockAddrLen;
     struct sockaddr_in srvSockAddr, cliSockAddr;
 
-    struct sigaction action;
-	action.sa_handler = wait_handler;
-	action.sa_flags = 0;
-	sigemptyset(&action.sa_mask);
+    signal(SIGCHLD, waitHandler);
 
     if ((listenSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0) {
 		perror("socket error ");
@@ -39,8 +35,8 @@ int StartServer(Router* r, char *addr) {
 
     memset(&srvSockAddr, sizeof(srvSockAddr), 0);
 	srvSockAddr.sin_family = PF_INET;
-	srvSockAddr.sin_port = htons(80); // TODO
-	srvSockAddr.sin_addr.s_addr = htonl(INADDR_ANY); // TODO
+	srvSockAddr.sin_port = htons(atoi(portNum)); 
+	srvSockAddr.sin_addr.s_addr = htonl(INADDR_ANY); 
 
 	if (bind(listenSocket, (struct sockaddr *)&srvSockAddr, sizeof(struct sockaddr_in)) < 0) {
 		perror("bind ");
@@ -68,7 +64,7 @@ int StartServer(Router* r, char *addr) {
         if (fork() == 0) {
 			close(listenSocket);
 			handleRequest(r, handleSocket);
-            return 0;
+            exit(0);
 		} else {
 			close(handleSocket);
 		}
@@ -78,6 +74,8 @@ int StartServer(Router* r, char *addr) {
 
 void handleRequest(Router *r, int sd) {
     while (1) {
+        int isClose = 0;
+        char *connection = NULL;
         Context ctx = {0, };
         Map *header = NewMap(10);
 
@@ -94,12 +92,18 @@ void handleRequest(Router *r, int sd) {
         ctx.sockfd = sd;
         
         ServeHTTP(r, &ctx);
-        printf("%-10s%-6d%s\n", ctx.req.method, ctx.status, ctx.req.url);
+        printf("%-7s%-6d%s\n", ctx.req.method, ctx.status, ctx.req.url);
 
+        if (GetData(header, "Connection", (void **)&connection, cpyString) != 1) {
+            if (strcmp("close", connection) == 0) 
+                isClose = 1;
+            free(connection);
+        }
         FreeMap(header, freeString);
         FreeRequest(&(ctx.req));
+        if (isClose)
+            break;
     }
-    printf("disconnect\n");
     close(sd);    
 }
 
@@ -127,10 +131,12 @@ int readLine(int fd, char *buf) {
 
 int parseHeader(Map *map, int fd) {
     char buf[2048];
-    if (readLine(fd, buf) <= 0) return -1;
+    if (readLine(fd, buf) <= 0) 
+        return -1;
     parseHeaderMethod(map, buf);
     while (1) {
-        if (readLine(fd, buf) <= 0) return -1;
+        if (readLine(fd, buf) <= 0) 
+            return -1;
         if (buf[1] == '\n')
             break;
         parseHeaderMeta(map, buf);

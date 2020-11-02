@@ -26,6 +26,10 @@ void param(Context *ctx) {
 }
 
 int main(int argc, char *argv[]) {
+    if (argc != 2) {
+        printf("usage: %s <portNum>\n", argv[0]);
+        return -1;
+    }
     Router *r = NewRouter();
     Static(r, "view");
     Static(r, "view/img");
@@ -34,7 +38,7 @@ int main(int argc, char *argv[]) {
     GET(r, "/image/png", png);
     GET(r, "/param/:arg", param);
 
-    StartServer(r, "temp");
+    StartServer(r, argv[1]);
 
     return 0;
 }
